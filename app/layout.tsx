@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { headers } from 'next/headers'
 import './globals.css'
 import { profile } from '@/lib/data'
 const site = process.env.NEXT_PUBLIC_SITE_URL || 'https://example.vercel.app'
@@ -11,6 +12,26 @@ export const metadata: Metadata = {
   openGraph: { title: `${profile.name} | AI & Robotics`, description: 'Selected engineering projects, robotics research, and technical experience.', type: 'website', url: site },
 }
 export const viewport: Viewport = { width: 'device-width', initialScale: 1, colorScheme: 'light dark' }
-export default function RootLayout({ children }: Readonly<{children: React.ReactNode}>) {
-  return <html lang="en"><body>{children}</body></html>
+export default async function RootLayout({ children }: Readonly<{children: React.ReactNode}>) {
+  // Reading request headers makes nonce-based CSP render per request instead of
+  // allowing a statically generated page to ship scripts without the matching nonce.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
+  return <html lang="en" suppressHydrationWarning>
+    <head>
+      <script nonce={nonce} dangerouslySetInnerHTML={{ __html: `(() => {
+        try {
+          const saved = localStorage.getItem('atri-theme');
+          const theme = saved === 'dark' || saved === 'light'
+            ? saved
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+          document.documentElement.dataset.theme = theme;
+          document.documentElement.style.colorScheme = theme;
+        } catch (_) {
+          document.documentElement.dataset.theme = 'light';
+          document.documentElement.style.colorScheme = 'light';
+        }
+      })();` }} />
+    </head>
+    <body>{children}</body>
+  </html>
 }

@@ -64,13 +64,13 @@ curl.exe -I https://YOUR-DEPLOYMENT-URL
 Look for `Content-Security-Policy`, `Strict-Transport-Security`, `X-Content-Type-Options`, `Referrer-Policy`, and `Permissions-Policy`.
 
 ## Security implementation
-- `next.config.js`: restrictive baseline CSP and supporting security headers.
-- `proxy.ts`: new random nonce and nonce-based script CSP per HTML request, compatible with Next.js hydration. Next.js 16 requires `proxy.ts` (rather than `middleware.ts`).
+- `next.config.js`: supporting security headers. Do not add a second static CSP there; multiple enforced CSP headers intersect and may block hydration.
+- `proxy.ts`: generates one random nonce and the page CSP per request. `app/layout.tsx` reads the request nonce with `headers()` (making HTML request-rendered) and attaches it to the theme bootstrap script; Next.js uses the request CSP nonce on its framework scripts. Next.js 16 uses `proxy.ts` (rather than `middleware.ts`).
 - Style CSP allows inline CSS for framework compatibility; production JavaScript CSP does not permit `unsafe-inline` or `unsafe-eval`.
 - Contact data is decoded client-side only on explicit user action. This deters basic HTML/email harvesters, but **is not cryptographic protection**. Sophisticated bots can inspect the shipped JS. For stronger privacy, replace direct contact details with a server-side, rate-limited contact form or third-party protected alias.
 - No third-party domains, cookies, analytics, or backend secrets are needed.
 - Do not commit `.env.local` or `.vercel/`.
-- Next.js nonce CSP means pages must be dynamically rendered; expect higher per-request rendering cost compared to full static caching.
+- Nonce-based CSP means the page is rendered per request; expect higher per-request rendering cost compared to full static caching.
 
 ## Edit content
 - Projects, links, skills and achievements: `lib/data.ts`
